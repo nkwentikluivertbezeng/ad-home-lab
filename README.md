@@ -84,7 +84,6 @@ DHCP gives an IP address automatically to new devices on the network.
 - Right click the server > **Authorize**, then refresh (the IPv4 icon turns green).
 
 ![DHCP scope](screenshots/09-dhcp-scope-configured.png)
-![DHCP authorized](screenshots/10-dhcp-authorized.png)
 
 ## 6. Create users with PowerShell
 
