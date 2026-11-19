@@ -1,0 +1,7 @@
+# never push secrets or VM files
+*.key
+authd.pass
+client.keys
+*.vdi
+*.vbox
+*.iso
