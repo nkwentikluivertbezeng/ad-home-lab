@@ -4,7 +4,6 @@
 
 A small Active Directory lab I built in VirtualBox to understand how a company network works from the inside: a domain controller that gives out IP addresses (DHCP), routes clients to the internet (NAT), and manages users, a Windows client that joins the domain, and Wazuh to monitor the machines and triage alerts.
 
-I followed Josh Madakor's AD home lab tutorial as a base, but I built it on **Windows Server 2025** instead of 2019, and I wrote down every step and problem in my own words.
 
 ## Architecture
 
