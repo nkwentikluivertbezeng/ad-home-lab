@@ -72,9 +72,9 @@ Instead of using the built-in Administrator, I created my own admin:
 
 - Add roles and features > **Remote Access** > role service **Routing**.
 - Tools > Routing and Remote Access > right click the DC > Configure > **NAT**, using the INTERNET adapter as the public interface.
-
+<!--
 ![RAS NAT](screenshots/08-ras-nat-routing-configured.png)
-
+-->
 ## 5. DHCP
 
 DHCP gives an IP address automatically to new devices on the network.
