@@ -17,7 +17,7 @@ flowchart LR
     end
     NIC2 --- SW[VirtualBox internal network]
     SW --- CLIENT["CLIENT1 - Windows client<br/>IP from DHCP (172.16.0.100-200)"]
-    SW --- WAZUH["Wazuh server<br/>(TODO: OS / IP)"]
+    SW --- WAZUH["Wazuh server<br/>(Docker / IP)"]
 ```
 
 | Item | Value |
