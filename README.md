@@ -97,7 +97,6 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 `-Scope Process` means the policy only changes for this session, not for the whole machine.
 
-![Script running](screenshots/11-powershell-create-users-script-running.png)
 ![Users created](screenshots/12-aduc-users-created.png)
 
 ## 7. Join the client to the domain
