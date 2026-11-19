@@ -174,9 +174,16 @@ After installing an agent, it did not show as connected.
 
 - [ ] Group Policy: password policy, lock screen, disable USB storage
 - [ ] Add a second client and compare activity across hosts
-- [ ] Configure Sysmon rules for improved endpoint visibility
-- [ ] Generate attack simulations (Kerberoasting, AS-REP Roasting) and observe detections in Wazuh
-- [ ] Create custom Wazuh rules and dashboards
-- [ ] Integrate threat intelligence feeds for enrichment
-d a file share with permissions per OU
-- [ ] Compare with the cloud version: Entra ID and Intune
+- [ ] Configure Sysmon for enhanced endpoint visibility
+- [ ] Simulate attacks (Kerberoasting, AS-REP Roasting) and analyze detections in Wazuh
+- [ ] Create custom Wazuh dashboards and detection rules
+- [ ] Deploy an MCP server exposing Active Directory management functions
+- [ ] Integrate an LLM (Claude / other MCP-compatible assistant) to perform supervised administrative tasks such as:
+  - Creating and disabling users
+  - Managing groups and permissions
+  - Querying AD health and user information
+  - Reviewing authentication events
+  - Generating security and compliance reports
+- [ ] Add approval workflows and role-based access controls to ensure AI-driven actions remain secure and auditable
+- [ ] Investigate AI-assisted SOC workflows by combining Active Directory, Wazuh alerts, and MCP tools
+
