@@ -67,8 +67,6 @@ Instead of using the built-in Administrator, I created my own admin:
 - Created a user in it and added it to the **Domain Admins** group.
 - Signed out and signed back in with this account.
 
-![Admin OU and user](screenshots/06-aduc-admin-ou-and-admin-user.png)
-![Domain Admins membership](screenshots/07-admin-user-domain-admins-group.png)
 
 ## 4. RAS / NAT (so clients can reach the internet through the DC)
 
