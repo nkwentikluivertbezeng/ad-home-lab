@@ -59,8 +59,6 @@ DNS      127.0.0.1   (the DC will be its own DNS server)
 - Clicked the yellow flag > **Promote this server to a domain controller** > **Add a new forest** > `mydomain.com`.
 - The server reboots (it took a long time for me, around 30 min).
 
-![AD DS role](screenshots/04-add-roles-ad-ds.png)
-![Promote to DC](screenshots/05-promote-to-domain-controller-new-forest.png)
 
 ## 3. Dedicated admin account
 
