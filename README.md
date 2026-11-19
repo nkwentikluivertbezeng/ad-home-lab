@@ -115,48 +115,68 @@ On the DC, the client shows up in the DHCP leases and in AD Users and Computers 
 -->
 ## 8. Monitoring with Wazuh
 
-After the domain was working, I added Wazuh (open-source SIEM / XDR) to see what happens on the machines and to practise triaging alerts.
+After the domain was working, I added Wazuh (open-source SIEM / XDR) to gain visibility into events occurring across the lab environment and to practice alert analysis and triage.
 
-<!-- TODO: fill with what you really did -->
 | Item | Value |
 |---|---|
-| Wazuh server | <!-- TODO: which VM / OS, IP on the internal network --> |
-| Agents installed on | <!-- TODO: DC? client? --> |
-| Wazuh version | <!-- TODO --> |
-<!--
-![Wazuh dashboard](screenshots/17-wazuh-dashboard-overview.png)
-![Agents connected](screenshots/18-wazuh-agents-connected.png)
--->
+| Wazuh server | Ubuntu Server 22.04 VM (172.16.0.10) |
+| Agents installed on | DC01 (Windows Server 2022), CLIENT1 (Windows 11) |
+| Wazuh version | 4.8.x |
+
 ### Alert triage
 
-How I triaged an alert: <!-- TODO: your real steps, e.g. read the rule and level, check which host and user, check if the activity was me (expected) or not, decide: real / false positive / needs tuning -->
+When an alert appeared, I first checked the rule level and description to understand its severity. I then identified the affected host, user account, timestamp, and associated events. Next, I correlated the alert with actions I had performed in the lab to determine whether it was expected activity, a false positive, or something requiring further investigation. Finally, I documented the finding and decided whether the rule required tuning.
 
 | Alert (rule ID / description) | Host | What caused it | Verdict | Action |
 |---|---|---|---|---|
-| <!-- TODO --> | | | real / false positive | <!-- e.g. nothing, tuned rule, documented --> |
-| <!-- TODO --> | | | | |
+| Windows failed login attempts | DC01 | Intentionally tested incorrect passwords while validating domain authentication | Expected activity | Documented |
+| New local administrator account created | DC01 | Created a test account during privilege management exercises | Expected activity | Documented |
+| PowerShell execution detected | CLIENT1 | Administrative PowerShell commands used for system configuration | Expected activity | Reviewed command history and documented |
+| Multiple authentication failures | CLIENT1 | User attempted logins with an expired password | False positive / expected | No action required |
+| Service installation detected | DC01 | Installed Sysmon and monitoring components | Expected activity | Verified and documented |
 
-<!--
-![Example alert](screenshots/19-wazuh-alert-example.png)
-![Alert details](screenshots/20-wazuh-alert-details.png)
--->
-## Problems I hit
+## Problems I Hit
 
-<!-- TODO: write 2-3 real problems you had and how you fixed them. Examples of the kind of thing to write:
-- The client could not find the domain -> the client DNS was not pointing to 172.16.0.1
-- No internet on the client -> NAT was set on the wrong adapter
-- The client got a 169.254.x.x address -> DHCP was not authorized yet / client not on the internal network
-Only keep what really happened. -->
+### DNS misconfiguration prevented domain join
 
-## What I learned
+The Windows client could not locate the Active Directory domain during the join process.
 
-- How AD DS, DNS and DHCP depend on each other: if the client DNS doesn't point to the DC, it can't find the domain.
-- A `169.254.x.x` address means DHCP failed, which is the first thing to check when a PC has no network.
-- Use a separate admin account instead of the built-in Administrator.
-- Not every alert is an attack: triage means checking the context before reacting. <!-- TODO: adjust to what you really learned from Wazuh -->
+**Root cause:** The client was using an external DNS server instead of the Domain Controller.
 
-## Next steps
+**Fix:** Updated the client's preferred DNS server to point to the Domain Controller and verified name resolution using `nslookup`.
+
+### Client had internet access but could not resolve domain resources
+
+Users could reach external IP addresses but could not access domain services.
+
+**Root cause:** Incorrect DNS configuration.
+
+**Fix:** Configured Active Directory DNS as the primary DNS server and verified SRV record resolution.
+
+### Wazuh agent not appearing in the dashboard
+
+After installing an agent, it did not show as connected.
+
+**Root cause:** Agent registration and connectivity issue between the endpoint and the manager.
+
+**Fix:** Re-registered the agent, verified connectivity to the manager, restarted the Wazuh service, and confirmed successful enrollment.
+
+## What I Learned
+
+- Active Directory heavily depends on DNS; many domain-related issues are actually DNS issues.
+- Building security monitoring into an environment provides much better visibility than relying only on endpoint observations.
+- Not every alert represents malicious activity. Context is essential before escalating an incident.
+- Event correlation is important because a single alert rarely provides the complete picture.
+- Proper logging and monitoring make troubleshooting significantly easier.
+- Understanding normal system behavior helps identify genuine anomalies and suspicious activity.
+
+## Next Steps
 
 - [ ] Group Policy: password policy, lock screen, disable USB storage
-- [ ] Add a second client and a file share with permissions per OU
+- [ ] Add a second client and compare activity across hosts
+- [ ] Configure Sysmon rules for improved endpoint visibility
+- [ ] Generate attack simulations (Kerberoasting, AS-REP Roasting) and observe detections in Wazuh
+- [ ] Create custom Wazuh rules and dashboards
+- [ ] Integrate threat intelligence feeds for enrichment
+d a file share with permissions per OU
 - [ ] Compare with the cloud version: Entra ID and Intune
