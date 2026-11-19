@@ -105,15 +105,15 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - Checked it received an IP from the DC with `ipconfig /all` (172.16.0.x, DNS 172.16.0.1).
 - Settings > Rename this PC (advanced) > Change > member of domain `mydomain.com`, using the admin account.
 - Rebooted and signed in with one of the created domain users.
-
+<!--
 ![Client got DHCP address](screenshots/13-client-ipconfig-dhcp-address.png)
 ![Join domain](screenshots/14-client-join-domain.png)
 ![Login as domain user](screenshots/15-client-login-domain-user.png)
-
+-->
 On the DC, the client shows up in the DHCP leases and in AD Users and Computers > Computers:
-
+<!--
 ![DHCP lease](screenshots/16-dhcp-address-leases.png)
-
+-->
 ## 8. Monitoring with Wazuh
 
 After the domain was working, I added Wazuh (open-source SIEM / XDR) to see what happens on the machines and to practise triaging alerts.
@@ -124,10 +124,10 @@ After the domain was working, I added Wazuh (open-source SIEM / XDR) to see what
 | Wazuh server | <!-- TODO: which VM / OS, IP on the internal network --> |
 | Agents installed on | <!-- TODO: DC? client? --> |
 | Wazuh version | <!-- TODO --> |
-
+<!--
 ![Wazuh dashboard](screenshots/17-wazuh-dashboard-overview.png)
 ![Agents connected](screenshots/18-wazuh-agents-connected.png)
-
+-->
 ### Alert triage
 
 How I triaged an alert: <!-- TODO: your real steps, e.g. read the rule and level, check which host and user, check if the activity was me (expected) or not, decide: real / false positive / needs tuning -->
@@ -137,9 +137,10 @@ How I triaged an alert: <!-- TODO: your real steps, e.g. read the rule and level
 | <!-- TODO --> | | | real / false positive | <!-- e.g. nothing, tuned rule, documented --> |
 | <!-- TODO --> | | | | |
 
+<!--
 ![Example alert](screenshots/19-wazuh-alert-example.png)
 ![Alert details](screenshots/20-wazuh-alert-details.png)
-
+-->
 ## Problems I hit
 
 <!-- TODO: write 2-3 real problems you had and how you fixed them. Examples of the kind of thing to write:
