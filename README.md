@@ -113,6 +113,14 @@ On the DC, the client shows up in the DHCP leases and in AD Users and Computers 
 <!--
 ![DHCP lease](screenshots/16-dhcp-address-leases.png)
 -->
+
+## 8. Basic attacks
+
+I used a created a username file , for simplicity i created the user.txt file from the users i already added the AD users . and added the password at the top of the password.txt file. 
+i then used crackmapexec to enumerate the users and try to find a valid user which and did and used his creds to list the shares.
+![crackmapexec](screenshots/04.png)
+
+
 ## 8. Monitoring with Wazuh
 
 After the domain was working, I added Wazuh (open-source SIEM / XDR) to gain visibility into events occurring across the lab environment and to practice alert analysis and triage.
@@ -135,6 +143,9 @@ When an alert appeared, I first checked the rule level and description to unders
 | Multiple authentication failures | CLIENT1 | User attempted logins with an expired password | False positive / expected | No action required |
 | Service installation detected | DC01 | Installed Sysmon and monitoring components | Expected activity | Verified and documented |
 
+
+![example wazuh alert](screenshots/19-wazuh-alert-example.png)
+![drill down into the failed login from crackmapexec](screenshots/20-wazuh-alert-details.png)
 ## Problems I Hit
 
 ### DNS misconfiguration prevented domain join
