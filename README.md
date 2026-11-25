@@ -4,6 +4,8 @@
 
 A small Active Directory lab I built in VirtualBox to understand how a company network works from the inside: a domain controller that gives out IP addresses (DHCP), routes clients to the internet (NAT), and manages users, a Windows client that joins the domain, and Wazuh to monitor the machines and triage alerts.
 
+The newest part: an **AI assistant (Claude) that can do supervised AD admin work** through n8n and MCP, limited to one OU and a fixed set of tested tools ([section 10](#10-managing-ad-with-an-ai-assistant-n8n--mcp)).
+
 
 ## Architecture
 
@@ -124,7 +126,7 @@ i then used crackmapexec to enumerate the users and try to find a valid user whi
 
 ![kerberoasting](screenshots/kerberoasting.png)
 
-## 8. Monitoring with Wazuh
+## 9. Monitoring with Wazuh
 
 After the domain was working, I added Wazuh (open-source SIEM / XDR) to gain visibility into events occurring across the lab environment and to practice alert analysis and triage.
 
@@ -149,6 +151,62 @@ When an alert appeared, I first checked the rule level and description to unders
 
 ![example wazuh alert](screenshots/19-wazuh-alert-example.png)
 ![drill down into the failed login from crackmapexec](screenshots/20-wazuh-alert-details.png)
+
+## 10. Managing AD with an AI assistant (n8n + MCP)
+
+### The vision
+
+Most AD admin work is repetitive: create a user, reset a password, add someone to a group, disable an account when they leave. I wanted to see if an AI assistant could do this work **safely**, the way a junior admin would: only the tasks it is allowed to do, in the part of the domain it is allowed to touch, and with every action visible and checkable.
+
+The long-term idea is an **AI-assisted helpdesk and SOC** for the lab:
+- **Admin side:** I ask in plain English ("create a user Jane Doe in Lab_users and add her to Helpdesk") and the assistant does it through fixed, tested tools, never by writing its own commands.
+- **Security side:** Wazuh alerts feed into the same pipeline, the assistant triages them with context from AD, and suggests a response (for example disabling a compromised account) that a human approves first.
+- **Guardrails first:** least privilege, input validation, a limited scope and an audit trail matter more than how smart the assistant is.
+
+This first step covers the admin side.
+
+### How it works
+
+```mermaid
+flowchart LR
+    CL["Claude<br/>(MCP client)"] -- "MCP over HTTP<br/>Bearer token<br/>localhost only" --> N8N
+    subgraph PC["My PC"]
+        N8N["n8n in Docker<br/>MCP Server Trigger<br/>12 AD tools"]
+    end
+    N8N -- "SSH, key only<br/>as svc-n8n" --> DC
+    subgraph VM["VirtualBox"]
+        DC["Domain controller<br/>host-only NIC 192.168.56.10<br/>PowerShell AD module"]
+    end
+    DC --> OU["_USERS > Lab_users<br/>(the only OU it can change)"]
+```
+
+- **[n8n](https://n8n.io)** (free, self-hosted in Docker) holds the workflows. Its **MCP Server Trigger** node turns them into tools an MCP client like Claude can call, so no separate MCP server is needed.
+- Each tool calls a sub-workflow that validates the input and runs **one fixed PowerShell script** on the DC over SSH.
+- The DC got a third network adapter (VirtualBox **host-only**, `192.168.56.10`) so n8n on my PC can reach it. SSH is limited to that network.
+- Everything is free: n8n community edition, Docker Desktop (personal), OpenSSH (built into Windows Server).
+
+| Read-only (whole domain) | Changes (`_USERS > Lab_users` only) |
+|---|---|
+| `list_lab` - what is in Lab_users | `create_user` - random temp password, must change at logon |
+| `search_users` | `reset_password` - random temp password + unlock |
+| `get_user` | `set_user_enabled` |
+| `list_group_members` | `delete_user` - only if already disabled |
+| | `create_group`, `add_group_member`, `remove_group_member`, `create_ou` |
+
+### Security design
+
+| Layer | What it does |
+|---|---|
+| Service account `svc-n8n` | Not an admin. Rights delegated with `dsacls` on `_USERS > Lab_users` only. It lives in `CN=Users`, outside that OU, so it can't reset its own password. |
+| SSH | Key login only for `svc-n8n`, dedicated key for n8n, allowed through `AllowGroups` via its own group, port 22 limited to the host-only network. |
+| Input handling | Inputs are checked with strict patterns, then sent to the DC as base64 **data** and read with `ConvertFrom-Json`. What the assistant types never becomes code, so command injection doesn't work. |
+| Scope check | Every change also checks the target is inside Lab_users before running, on top of the AD permissions. |
+| n8n | Only listens on `127.0.0.1`. The MCP endpoint needs a Bearer token (403 without it). |
+
+Tested: resetting `Administrator`'s password, adding someone to `Domain Admins`, editing `svc-n8n` itself and injection attempts in names are all refused.
+
+Scripts and workflows: [`setup-dc-n8n.ps1`](setup-dc-n8n.ps1), [`fix-dc-ssh-allowgroups.ps1`](fix-dc-ssh-allowgroups.ps1), [`merge-lab-ous.ps1`](merge-lab-ous.ps1) and the [`n8n/`](n8n) folder (workflow generator, the runner logic, and test scripts).
+
 ## Problems I Hit
 
 ### DNS misconfiguration prevented domain join
@@ -175,6 +233,26 @@ After installing an agent, it did not show as connected.
 
 **Fix:** Re-registered the agent, verified connectivity to the manager, restarted the Wazuh service, and confirmed successful enrollment.
 
+### SSH login for the service account was rejected
+
+The `svc-n8n` key login kept failing with "Permission denied".
+
+**Root cause:** the DC's `sshd_config` has an `AllowGroups` line, and the OpenSSH log showed "none of user's groups are listed in AllowGroups". Adding the group as `"mydomain\\ssh-automation"` still didn't match on the DC.
+
+**Fix:** put `svc-n8n` in its own group and add it with a wildcard: `AllowGroups administrators "openssh users" *ssh-automation`. The OpenSSH event log (`OpenSSH/Operational`) showed the real reason each time.
+
+### Commands broke when sent over SSH
+
+**Root cause:** the default SSH shell on Windows is `cmd`, which mangles quotes. n8n's SSH node also adds `cd '<folder>' ;` before the command, which `cmd` can't parse.
+
+**Fix:** send everything as `powershell -NoProfile -NonInteractive -EncodedCommand <base64>`, and set the SSH node's working directory to an expression that evaluates to empty.
+
+### Two "lab users" OUs
+
+My setup script created a new top-level `Lab Users` OU, but I already had `_USERS > Lab_users`, and the service account had ended up inside it.
+
+**Fix:** [`merge-lab-ous.ps1`](merge-lab-ous.ps1) moved everything into `_USERS > Lab_users`, moved `svc-n8n` back to `CN=Users`, and deleted the duplicate OU.
+
 ## What I Learned
 
 - Active Directory heavily depends on DNS; many domain-related issues are actually DNS issues.
@@ -183,6 +261,8 @@ After installing an agent, it did not show as connected.
 - Event correlation is important because a single alert rarely provides the complete picture.
 - Proper logging and monitoring make troubleshooting significantly easier.
 - Understanding normal system behavior helps identify genuine anomalies and suspicious activity.
+- Giving an AI assistant admin powers is mostly a least-privilege problem: limit what it can touch, give it fixed tools instead of a shell, and treat its input as data, not code.
+- Delegating rights on one OU is a clean way to give a service account real power without making it a Domain Admin.
 
 ## Next Steps
 
@@ -191,13 +271,15 @@ After installing an agent, it did not show as connected.
 - [ ] Configure Sysmon for enhanced endpoint visibility
 - [ ] Simulate attacks (Kerberoasting, AS-REP Roasting) and analyze detections in Wazuh
 - [ ] Create custom Wazuh dashboards and detection rules
-- [ ] Deploy an MCP server exposing Active Directory management functions
+- [x] Deploy an MCP server exposing Active Directory management functions (n8n, see section 10)
 - [ ] Integrate an LLM (Claude / other MCP-compatible assistant) to perform supervised administrative tasks such as:
-  - Creating and disabling users
-  - Managing groups and permissions
-  - Querying AD health and user information
-  - Reviewing authentication events
-  - Generating security and compliance reports
-- [ ] Add approval workflows and role-based access controls to ensure AI-driven actions remain secure and auditable
-- [ ] Investigate AI-assisted SOC workflows by combining Active Directory, Wazuh alerts, and MCP tools
+  - [x] Creating and disabling users
+  - [x] Managing groups (membership, new groups, OUs)
+  - [x] Querying user information
+  - [ ] Querying AD health (replication, DNS, services)
+  - [ ] Reviewing authentication events
+  - [ ] Generating security and compliance reports
+- [ ] Log every tool call (who asked, what ran, result) to a file or Wazuh for an audit trail
+- [ ] Add approval workflows and role-based access controls so risky actions (delete, password reset) need a human click first
+- [ ] Investigate AI-assisted SOC workflows by combining Active Directory, Wazuh alerts, and MCP tools: send Wazuh alerts to n8n, let the assistant triage them with AD context, and suggest responses for approval
 
