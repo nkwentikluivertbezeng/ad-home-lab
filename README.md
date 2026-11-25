@@ -120,6 +120,9 @@ I used a created a username file , for simplicity i created the user.txt file fr
 i then used crackmapexec to enumerate the users and try to find a valid user which and did and used his creds to list the shares.
 ![crackmapexec](screenshots/04.png)
 
+### Kerberoasting
+
+![kerberoasting](screenshots/kerberoasting.png)
 
 ## 8. Monitoring with Wazuh
 
