@@ -1,0 +1,900 @@
+{
+  "id": "wazuhToolsMcp001",
+  "name": "Wazuh Tools - MCP Server",
+  "active": false,
+  "nodes": [
+    {
+      "id": "c4b7a44a-715a-4c99-bd50-6087c8629307",
+      "name": "MCP Server Trigger",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "authentication": "bearerAuth",
+        "path": "wazuh",
+        "instructions": "Read-only tools for the Wazuh SIEM that monitors the home lab (domain controller, clients, Linux hosts). Nothing here can change Wazuh. For a general health check call agents_status, manager_status and alert_summary, then summarise: agents down, notable high-severity alerts, suspicious patterns (failed logins, new source IPs, MITRE techniques) and critical vulnerabilities. Drill into specifics with search_alerts and get_alert."
+      },
+      "webhookId": "96cf0d4a-84f1-4e04-8f90-b0c4aeb29598",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "wzMcpBearer0001",
+          "name": "Wazuh MCP Bearer token"
+        }
+      }
+    },
+    {
+      "id": "3cc4132a-669c-4653-8c5a-d55c14b6c8e2",
+      "name": "agents_status",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -440,
+        260
+      ],
+      "parameters": {
+        "description": "List every Wazuh agent with its connection status (active / disconnected / never_connected), OS, IP, version and last keep-alive. Use this to check which machines are being monitored.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "agents_status"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "a0f55f89-04ee-476e-9e57-9e1c777006ce",
+      "name": "manager_status",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        260
+      ],
+      "parameters": {
+        "description": "Show which Wazuh manager daemons are running or stopped (analysisd, remoted, modulesd, etc). Use this to check that Wazuh itself is healthy.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "manager_status"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "26eda242-2e58-48d7-ac87-7694011a2151",
+      "name": "alert_summary",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        260
+      ],
+      "parameters": {
+        "description": "Summarise Wazuh alerts for a time window: total, counts per level, the latest high-severity alerts (level 10+), top rules, top agents, rule groups, MITRE ATT&CK techniques, source IPs and an alert timeline. Start here for \"what happened\" questions.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "alert_summary",
+            "hours": "={{ $fromAI('hours', 'How many hours back to look, 1 to 720. Default 24.', 'number', 24) }}",
+            "min_level": "={{ $fromAI('min_level', 'Only alerts with rule level at or above this, 0 to 15. Wazuh levels: 0-6 low, 7-11 medium, 12+ high. Default 0.', 'number', 0) }}",
+            "agent": "={{ $fromAI('agent', 'Optional agent name or id, e.g. DC or 004. Empty for all agents.', 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": false
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": false
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "9bb26697-7f35-46e2-a4c0-c6dddb004f35",
+      "name": "search_alerts",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        260
+      ],
+      "parameters": {
+        "description": "Find individual Wazuh alerts, newest first, filtered by time window, minimum level, agent, rule id, rule group and/or text. Returns compact alerts with an alert_id for get_alert.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "search_alerts",
+            "hours": "={{ $fromAI('hours', 'How many hours back to look, 1 to 720. Default 24.', 'number', 24) }}",
+            "min_level": "={{ $fromAI('min_level', 'Only alerts with rule level at or above this, 0 to 15. Wazuh levels: 0-6 low, 7-11 medium, 12+ high. Default 0.', 'number', 0) }}",
+            "agent": "={{ $fromAI('agent', 'Optional agent name or id, e.g. DC or 004. Empty for all agents.', 'string', '') }}",
+            "rule_id": "={{ $fromAI('rule_id', 'Optional Wazuh rule id, e.g. 60122.', 'string', '') }}",
+            "group": "={{ $fromAI('group', 'Optional rule group, e.g. authentication_failed, authentication_success, windows, syscheck, sca, vulnerability-detector.', 'string', '') }}",
+            "text": "={{ $fromAI('text', 'Optional text to find in the raw log or rule description, e.g. administrator or 4625.', 'string', '') }}",
+            "limit": "={{ $fromAI('limit', 'Max alerts to return, 1 to 50. Default 20.', 'number', 20) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": false
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": false
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": false
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "46f8796f-d0ab-4094-8d2d-f9470876f648",
+      "name": "get_alert",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "description": "Get the full details of one Wazuh alert by its alert_id, including the decoded event data and the raw log.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "get_alert",
+            "alert_id": "={{ $fromAI('alert_id', 'The alert_id returned by search_alerts or alert_summary.', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "e6651775-d6b9-4363-be15-b6c948b56352",
+      "name": "vulnerability_summary",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        260
+      ],
+      "parameters": {
+        "description": "Summarise vulnerabilities Wazuh has detected on the agents: counts per severity and per agent, the highest-scoring CVEs with affected packages, and the most affected packages.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "wazuhToolsRun001",
+          "mode": "list",
+          "cachedResultName": "Wazuh Tools - Runner"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action": "vulnerability_summary",
+            "agent": "={{ $fromAI('agent', 'Optional agent name or id, e.g. DC or 004. Empty for all agents.', 'string', '') }}",
+            "severity": "={{ $fromAI('severity', 'Optional: Critical, High, Medium or Low. Empty for all.', 'string', '') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "action",
+              "displayName": "action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hours",
+              "displayName": "hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "min_level",
+              "displayName": "min_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "agent",
+              "displayName": "agent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rule_id",
+              "displayName": "rule_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "group",
+              "displayName": "group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "any",
+              "removed": true
+            },
+            {
+              "id": "alert_id",
+              "displayName": "alert_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "agents_status": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manager_status": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alert_summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_alerts": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_alert": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "vulnerability_summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
