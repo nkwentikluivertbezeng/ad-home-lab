@@ -5,3 +5,4 @@ client.keys
 *.vdi
 *.vbox
 *.iso
+.ssh/
