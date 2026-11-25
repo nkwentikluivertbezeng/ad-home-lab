@@ -1,0 +1,9 @@
+[
+  ["list_lab",                          {"action": "list_lab"}],
+  ["get_user j.brice",                  {"action": "get_user", "sam": "j.brice"}],
+  ["create temp user",                  {"action": "create_user", "first_name": "Temp", "last_name": "Merge", "sam": "t.merge"}],
+  ["disable temp user",                 {"action": "set_user_enabled", "sam": "t.merge", "enabled": false}],
+  ["delete temp user",                  {"action": "delete_user", "sam": "t.merge"}],
+  ["GUARD reset svc-n8n (no)",          {"action": "reset_password", "sam": "svc-n8n"}],
+  ["GUARD reset Administrator (no)",    {"action": "reset_password", "sam": "Administrator"}]
+]

@@ -1,0 +1,9 @@
+[
+  ["list_lab", {}],
+  ["create_user", {"first_name": "Mcp", "last_name": "Tester"}],
+  ["set_user_enabled", {"sam": "m.tester", "enabled": false}],
+  ["get_user", {"sam": "m.tester"}],
+  ["reset_password", {"sam": "Administrator"}],
+  ["delete_user", {"sam": "m.tester"}],
+  ["list_lab", {}]
+]

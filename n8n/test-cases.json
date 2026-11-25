@@ -1,0 +1,21 @@
+[
+  ["list_lab (empty)",                 {"action": "list_lab"}],
+  ["search_users admin",               {"action": "search_users", "query": "admin"}],
+  ["create_ou Test",                   {"action": "create_ou", "ou_name": "ZZ-Test"}],
+  ["create_group in ZZ-Test",          {"action": "create_group", "group": "zz-test-group", "ou": "ZZ-Test", "description": "temp"}],
+  ["create_user Jane Doe + group",     {"action": "create_user", "first_name": "Jane", "last_name": "Doe", "ou": "ZZ-Test", "groups": "zz-test-group", "description": "temp test"}],
+  ["get_user j.doe",                   {"action": "get_user", "sam": "j.doe"}],
+  ["list_group_members",               {"action": "list_group_members", "group": "zz-test-group"}],
+  ["reset_password j.doe",             {"action": "reset_password", "sam": "j.doe"}],
+  ["remove_group_member",              {"action": "remove_group_member", "group": "zz-test-group", "sam": "j.doe"}],
+  ["add_group_member",                 {"action": "add_group_member", "group": "zz-test-group", "sam": "j.doe"}],
+  ["delete_user while enabled (no)",   {"action": "delete_user", "sam": "j.doe"}],
+  ["set_user_enabled false",           {"action": "set_user_enabled", "sam": "j.doe", "enabled": false}],
+  ["list_lab (populated)",             {"action": "list_lab"}],
+  ["GUARD reset Administrator (no)",   {"action": "reset_password", "sam": "Administrator"}],
+  ["GUARD add to Domain Admins (no)",  {"action": "add_group_member", "group": "Domain Admins", "sam": "j.doe"}],
+  ["GUARD injection in query (no)",    {"action": "search_users", "query": "x' -or 1 -eq 1 -or Name -like '"}],
+  ["GUARD injection in name (no)",     {"action": "create_user", "first_name": "a\"; Remove-ADUser x; \"", "last_name": "b"}],
+  ["GUARD unknown action (no)",        {"action": "Remove-ADDomain"}],
+  ["delete_user j.doe",                {"action": "delete_user", "sam": "j.doe"}]
+]

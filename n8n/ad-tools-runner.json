@@ -1,0 +1,161 @@
+{
+  "id": "adToolsRunner001",
+  "name": "AD Tools - Runner",
+  "active": false,
+  "nodes": [
+    {
+      "id": "5eedc1f7-397d-41ce-ad1a-98be1025bb2c",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "query",
+              "type": "string"
+            },
+            {
+              "name": "sam",
+              "type": "string"
+            },
+            {
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "name": "ou",
+              "type": "string"
+            },
+            {
+              "name": "ou_name",
+              "type": "string"
+            },
+            {
+              "name": "group",
+              "type": "string"
+            },
+            {
+              "name": "groups",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "name": "enabled",
+              "type": "any"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2512e742-94c3-42f6-8d72-5110350d8e46",
+      "name": "Build command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// n8n Code node: \"Build command\" (AD Tools - Runner)\n// Validates the tool inputs, then builds ONE fixed PowerShell script for the\n// requested action. Claude's values never become code: they travel to the DC\n// as base64-encoded JSON data and are read there with ConvertFrom-Json.\n\nconst i = $input.first().json;\n\n// ---- shared PowerShell preamble -------------------------------------------\nconst PRE = [\n  \"$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue'\",\n  \"Import-Module ActiveDirectory\",\n  \"$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__B64__'))|ConvertFrom-Json\",\n  \"$dom=Get-ADDomain;$lab='OU=Lab_users,OU=_USERS,'+$dom.DistinguishedName\",\n  \"function Ok($o){[Console]::Out.Write((@{ok=$true;result=$o}|ConvertTo-Json -Compress -Depth 5))}\",\n  \"function InLab($dn){if(-not $dn.EndsWith(','+$lab)){throw ('Not allowed: '+$dn+' is outside _USERS > Lab_users')}}\",\n  \"function OuDN($rel){if(-not $rel){return $lab};$a=$rel -split '/';[array]::Reverse($a);(($a|%{'OU='+$_}) -join ',')+','+$lab}\",\n  \"function NewPw{$c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#%*-_';(-join(1..14|%{$c[(Get-Random -Max $c.Length)]}))+'Aa1!'}\",\n  \"function Sec($s){ConvertTo-SecureString $s -AsPlainText -Force}\",\n  \"\",\n].join(\"\\n\");\n\n// ---- one fixed script per action --------------------------------------------\nconst A = {\n  list_lab: [\n    \"$ous=@(Get-ADOrganizationalUnit -SearchBase $lab -Filter *|?{$_.DistinguishedName -ne $lab}|%{$_.DistinguishedName.Replace(','+$lab,'')})\",\n    \"$grp=@(Get-ADGroup -SearchBase $lab -Filter *|%{$_.Name})\",\n    \"$usr=@(Get-ADUser -SearchBase $lab -Filter *|%{@{sam=$_.SamAccountName;name=$_.Name;enabled=$_.Enabled;ou=(($_.DistinguishedName -split ',',2)[1]).Replace($lab,'').TrimEnd(',')}})\",\n    \"Ok @{lab=$lab;ous=$ous;groups=$grp;users=$usr}\",\n  ],\n  search_users: [\n    \"$q=$p.query\",\n    \"$r=@(Get-ADUser -Filter \\\"SamAccountName -like '*$q*' -or Name -like '*$q*'\\\" -ResultSetSize 25|%{@{sam=$_.SamAccountName;name=$_.Name;enabled=$_.Enabled;dn=$_.DistinguishedName}})\",\n    \"Ok $r\",\n  ],\n  get_user: [\n    \"$u=Get-ADUser -Identity $p.sam -Properties Description,MemberOf,LastLogonDate,WhenCreated,PasswordLastSet,LockedOut\",\n    \"Ok @{sam=$u.SamAccountName;name=$u.Name;enabled=$u.Enabled;locked=$u.LockedOut;dn=$u.DistinguishedName;description=$u.Description;created=[string]$u.WhenCreated;lastLogon=[string]$u.LastLogonDate;passwordLastSet=[string]$u.PasswordLastSet;groups=@($u.MemberOf|%{($_ -split ',')[0] -replace '^CN=',''})}\",\n  ],\n  create_user: [\n    \"$ou=OuDN $p.ou\",\n    \"$sam=$p.sam;if(-not $sam){$sam=($p.first_name.Substring(0,1)+'.'+$p.last_name).ToLower() -replace '[^a-z0-9._-]',''}\",\n    \"if($sam.Length -gt 20){$sam=$sam.Substring(0,20)}\",\n    \"$full=$p.first_name+' '+$p.last_name;$pw=NewPw\",\n    \"$h=@{Name=$full;GivenName=$p.first_name;Surname=$p.last_name;DisplayName=$full;SamAccountName=$sam;UserPrincipalName=$sam+'@'+$dom.DNSRoot;Path=$ou;AccountPassword=(Sec $pw);Enabled=$true;ChangePasswordAtLogon=$true}\",\n    \"if($p.description){$h.Description=$p.description}\",\n    \"New-ADUser @h\",\n    \"$added=@();foreach($g in ($p.groups -split ',')){$g=$g.Trim();if($g){$gr=Get-ADGroup -Identity $g;InLab $gr.DistinguishedName;Add-ADGroupMember -Identity $gr -Members $sam;$added+=$gr.Name}}\",\n    \"Ok @{sam=$sam;name=$full;dn=('CN='+$full+','+$ou);temporaryPassword=$pw;mustChangeAtLogon=$true;groups=$added}\",\n  ],\n  reset_password: [\n    \"$u=Get-ADUser -Identity $p.sam;InLab $u.DistinguishedName;$pw=NewPw\",\n    \"Set-ADAccountPassword -Identity $u -Reset -NewPassword (Sec $pw);Set-ADUser -Identity $u -ChangePasswordAtLogon $true;Unlock-ADAccount -Identity $u\",\n    \"Ok @{sam=$u.SamAccountName;temporaryPassword=$pw;mustChangeAtLogon=$true;unlocked=$true}\",\n  ],\n  set_user_enabled: [\n    \"$u=Get-ADUser -Identity $p.sam;InLab $u.DistinguishedName\",\n    \"if($p.enabled){Enable-ADAccount -Identity $u}else{Disable-ADAccount -Identity $u}\",\n    \"Ok @{sam=$u.SamAccountName;enabled=[bool]$p.enabled}\",\n  ],\n  delete_user: [\n    \"$u=Get-ADUser -Identity $p.sam;InLab $u.DistinguishedName\",\n    \"if($u.Enabled){throw ('User '+$u.SamAccountName+' is still enabled. Disable it first, then delete.')}\",\n    \"Remove-ADUser -Identity $u -Confirm:$false\",\n    \"Ok @{deleted=$u.SamAccountName}\",\n  ],\n  create_group: [\n    \"$ou=OuDN $p.ou\",\n    \"$h=@{Name=$p.group;SamAccountName=$p.group;GroupScope='Global';GroupCategory='Security';Path=$ou}\",\n    \"if($p.description){$h.Description=$p.description}\",\n    \"New-ADGroup @h\",\n    \"Ok @{group=$p.group;dn=('CN='+$p.group+','+$ou)}\",\n  ],\n  add_group_member: [\n    \"$g=Get-ADGroup -Identity $p.group;InLab $g.DistinguishedName;$u=Get-ADUser -Identity $p.sam\",\n    \"Add-ADGroupMember -Identity $g -Members $u\",\n    \"Ok @{group=$g.Name;added=$u.SamAccountName}\",\n  ],\n  remove_group_member: [\n    \"$g=Get-ADGroup -Identity $p.group;InLab $g.DistinguishedName;$u=Get-ADUser -Identity $p.sam\",\n    \"Remove-ADGroupMember -Identity $g -Members $u -Confirm:$false\",\n    \"Ok @{group=$g.Name;removed=$u.SamAccountName}\",\n  ],\n  list_group_members: [\n    \"$g=Get-ADGroup -Identity $p.group\",\n    \"Ok @{group=$g.Name;dn=$g.DistinguishedName;members=@(Get-ADGroupMember -Identity $g|%{@{sam=$_.SamAccountName;name=$_.Name;type=$_.objectClass}})}\",\n  ],\n  create_ou: [\n    \"$parent=OuDN $p.ou\",\n    \"New-ADOrganizationalUnit -Name $p.ou_name -Path $parent -ProtectedFromAccidentalDeletion $false\",\n    \"Ok @{dn=('OU='+$p.ou_name+','+$parent)}\",\n  ],\n};\n\nconst REQUIRED = {\n  list_lab: [], search_users: ['query'], get_user: ['sam'],\n  create_user: ['first_name', 'last_name'], reset_password: ['sam'],\n  set_user_enabled: ['sam', 'enabled'], delete_user: ['sam'],\n  create_group: ['group'], add_group_member: ['group', 'sam'],\n  remove_group_member: ['group', 'sam'], list_group_members: ['group'],\n  create_ou: ['ou_name'],\n};\n\n// ---- validation -------------------------------------------------------------\nconst RX = {\n  sam: /^[A-Za-z0-9._-]{1,20}$/,\n  name: /^[\\p{L}\\p{M}0-9 .'-]{1,64}$/u,\n  group: /^[A-Za-z0-9 ._-]{1,64}$/,\n  ou: /^[A-Za-z0-9 _-]{1,64}(\\/[A-Za-z0-9 _-]{1,64}){0,4}$/,\n  query: /^[A-Za-z0-9 ._-]{1,64}$/,\n};\nconst str = v => (v === null || v === undefined) ? '' : String(v).trim();\nconst check = (k, v, rx) => { if (v && !rx.test(v)) throw new Error(`Invalid ${k}: \"${v}\"`); return v; };\n\nconst action = str(i.action);\nif (!A[action]) throw new Error(`Unknown action \"${action}\"`);\n\nconst p = {\n  query: check('query', str(i.query), RX.query),\n  sam: check('sam', str(i.sam), RX.sam),\n  first_name: check('first_name', str(i.first_name), RX.name),\n  last_name: check('last_name', str(i.last_name), RX.name),\n  ou: check('ou', str(i.ou).replace(/^\\/+|\\/+$/g, ''), RX.ou),\n  ou_name: check('ou_name', str(i.ou_name), RX.group),\n  group: check('group', str(i.group), RX.group),\n  groups: str(i.groups),\n  description: str(i.description).replace(/[\\u0000-\\u001f]/g, ' ').slice(0, 200),\n  enabled: i.enabled === true || str(i.enabled).toLowerCase() === 'true',\n};\nfor (const g of p.groups.split(',').map(x => x.trim()).filter(Boolean)) check('group (in groups)', g, RX.group);\n\nfor (const k of REQUIRED[action]) {\n  const missing = k === 'enabled' ? str(i.enabled) === '' : !p[k];\n  if (missing) throw new Error(`\"${k}\" is required for ${action}`);\n}\n\n// ---- build the command -------------------------------------------------------\nconst data = Buffer.from(JSON.stringify(p), 'utf8').toString('base64');\nconst script = PRE.replace('__B64__', data) +\n  'try{\\n' + A[action].join('\\n') + '\\n}catch{[Console]::Out.Write((@{ok=$false;error=$_.Exception.Message}|ConvertTo-Json -Compress))}';\nconst encoded = Buffer.from(script, 'utf16le').toString('base64');\n\nreturn [{ json: { action, command: 'powershell -NoProfile -NonInteractive -EncodedCommand ' + encoded } }];\n"
+      }
+    },
+    {
+      "id": "16d2b69f-c13d-40c0-9866-2930515019cd",
+      "name": "Run on DC",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "command": "={{ $json.command }}",
+        "cwd": "={{ '' }}"
+      },
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "ZbUqemFa7aF5Qc0D",
+          "name": "SSH Private Key account"
+        }
+      }
+    },
+    {
+      "id": "ae8853cf-773b-43d0-90be-e377c03a23a4",
+      "name": "Format result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Turn the DC's JSON output into the tool result\nconst r = $input.first().json;\nlet out;\ntry { out = JSON.parse(r.stdout); }\ncatch { out = { ok: false, error: 'Unexpected output from the domain controller', stdout: String(r.stdout || '').slice(0, 500), stderr: String(r.stderr || '').slice(0, 500), exitCode: r.code }; }\nreturn [{ json: out }];"
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Build command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build command": {
+      "main": [
+        [
+          {
+            "node": "Run on DC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run on DC": {
+      "main": [
+        [
+          {
+            "node": "Format result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {}
+}
